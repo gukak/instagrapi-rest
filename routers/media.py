@@ -170,3 +170,12 @@ async def media_unarchive(sessionid: str = Form(...),
     """
     cl = clients.get(sessionid)
     return cl.media_unarchive(media_id)
+
+@router.post("/user_archives", response_model=List[Media])
+async def user_archives(sessionid: str = Form(...),
+                      amount: Optional[int] = Form(50),
+                      clients: ClientStorage = Depends(get_clients)) -> List[Media]:
+    """Get a user's media
+    """
+    cl = clients.get(sessionid)
+    return cl.user_archives(amount)
