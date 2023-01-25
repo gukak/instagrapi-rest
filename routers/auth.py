@@ -2,6 +2,7 @@ import json
 from typing import Optional, Dict
 from fastapi import APIRouter, Depends, Form
 from dependencies import ClientStorage, get_clients
+from instagrapi.types import Device
 
 router = APIRouter(
     prefix="/auth",
@@ -39,6 +40,50 @@ async def auth_login(username: str = Form(...),
         return cl.sessionid
     return result
 
+@router.post("/login_ext")
+async def auth_login_ext(username: str = Form(...),
+                     password: str = Form(...),
+                     verification_code: Optional[str] = Form(""),
+                     proxy: Optional[str] = Form(""),
+                     locale: Optional[str] = Form(""),
+                     timezone: Optional[str] = Form(None),
+                     country: Optional[str] = Form(""),
+                     country_Code: Optional[int] = Form(None),
+                     device: Optional[Device] = Form(None),
+                     clients: ClientStorage = Depends(get_clients)) -> str:
+    """Login by username and password with 2FA
+    """
+    cl = clients.client()
+    if proxy != "":
+        cl.set_proxy(proxy)
+
+    if locale != "":
+        cl.set_locale(locale)
+
+    if timezone is not None:
+        cl.set_timezone_offset(timezone)
+
+    if device != "":
+        cl.set_device(json.loads(device))
+
+    if country != "":
+        cl.set_country(country)
+
+    if country_Code is not None:
+        cl.set_country_code(country_Code)
+
+    cl.set_user_agent()
+    # result = cl.get_settings()
+
+    result = cl.login(
+        username,
+        password,
+        verification_code=verification_code
+    )
+    if result:
+        clients.set(cl)
+        return cl.sessionid
+    return result
 
 @router.post("/relogin")
 async def auth_relogin(sessionid: str = Form(...),
